@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  hospital:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: hospital-server
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./server:/app/server
+      - ./main.py:/app/main.py
+    working_dir: /app
+    command: ["python", "-u", "main.py"]
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: client-generator
+    depends_on:
+      - hospital
+    volumes:
+      - ./client:/app
+    working_dir: /app
+    command: ["python", "-u", "client_generator.py"]

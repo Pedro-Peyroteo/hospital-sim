@@ -2,7 +2,7 @@ import socket
 import random
 import time
 
-HOST = 'localhost'
+HOST = 'hospital'
 PORT = 5000
 
 urgency_levels = ["RED", "YELLOW", "GREEN"]
@@ -20,6 +20,8 @@ def send_patient(pid):
         
 def client_generator():
     print("[Client] Generator started.")
+    print("[Client] Waiting for server to be ready...")
+    time.sleep(3)  # Wait a few seconds for the hospital server to start
     
     pid = 1
     
