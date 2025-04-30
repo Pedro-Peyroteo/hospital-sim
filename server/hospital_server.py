@@ -1,11 +1,12 @@
 import socket
 import threading
-import queue
 from .patient import Patient
+from .dashboard_handler import start_dashboard_listener, broadcast_to_dashboards
 from .triage import add_to_queue
 from .doctor import doctor_worker
 from .state import triage_queue
 
+# TODO: REFRACTOR ADD_TO_QUEUE
 
 HOST = '0.0.0.0'
 PORT = 5000
@@ -28,13 +29,14 @@ def handle_patient(conn, addr):
             patient = Patient(pid, urgency)
             triage_queue.put(patient)
             
-            conn.sendall("ACK from Hospital".encode('utf-8'))       
+            conn.sendall("ACK from Hospital".encode('utf-8'))
+            broadcast_to_dashboards(f"Patient {pid} queued ({urgency})")
+            
+            
     except Exception as e:
         print(f"[ERROR] {addr}: {e}")
     finally:
         conn.close()
-
-
 
 def hospital_server():
     # Starts doctor workers.
@@ -57,4 +59,5 @@ def hospital_server():
         threading.Thread(target=handle_patient, args=(conn, addr), daemon=True).start() # Starts 
 
 if __name__ == "__main__":
+    start_dashboard_listener(host='0.0.0.0', port=5999)
     hospital_server()

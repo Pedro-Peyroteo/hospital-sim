@@ -1,6 +1,7 @@
 import time
 import random
 from .state import triage_queue
+from .dashboard_handler import broadcast_to_dashboards
 
 def doctor_worker(doctor_id):
     while True:
@@ -13,5 +14,6 @@ def doctor_worker(doctor_id):
             time.sleep(treatment_time)
             
             print(f"[Doctor {doctor_id}] Finished patient {patient.pid} after {treatment_time}s.")
+            broadcast_to_dashboards(f"Doctor {doctor_id} treated patient {patient.pid} ({patient.urgency})")
         else:
             time.sleep(1)

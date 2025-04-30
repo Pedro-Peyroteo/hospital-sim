@@ -8,6 +8,7 @@ services:
     container_name: hospital-server
     ports:
       - "5000:5000"
+      - "5999:5999"
     volumes:
       - ./server:/app/server
       - ./main.py:/app/main.py
@@ -25,3 +26,17 @@ services:
       - ./client:/app
     working_dir: /app
     command: ["python", "-u", "client_generator.py"]
+
+  dashboard:
+    build:
+      context: ./dashboard
+    container_name: hospital-dashboard
+    ports:
+      - "8000:8000"
+    depends_on:
+      - hospital
+    volumes:
+      - ./dashboard:/app
+      - ./server:/app/server
+    working_dir: /app
+    command: ["python", "-u", "app.py"]
