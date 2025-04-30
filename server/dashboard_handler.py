@@ -1,3 +1,5 @@
+import json
+import time
 import socket
 import threading
 
@@ -25,3 +27,17 @@ def broadcast_to_dashboards(message):
             dash_conn.sendall((message + "\n").encode('utf-8'))
         except Exception as e:
             connected_dashboards.remove(dash_conn)
+
+def broadcast_thread_info():
+    print("[Hospital] broadcast_thread_info started")  # confirm thread starts
+    while True:
+        print("[Hospital] broadcasting thread info...")  
+
+        info = {
+            "type": "thread_info",
+            "timestamp": time.time(),
+            "active": threading.active_count(),
+            "threads": [t.name for t in threading.enumerate()]
+        }
+        broadcast_to_dashboards(json.dumps(info))
+        time.sleep(5)

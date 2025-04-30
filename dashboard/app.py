@@ -1,7 +1,6 @@
 from flask import Flask, jsonify
-import threading
 from server.state import triage_queue
-from event_listener import messages, listen_to_hospital_broadcast
+from event_listener import messages, listen_to_hospital_broadcast, threads_info
 
 app = Flask(__name__)
 
@@ -19,17 +18,14 @@ def get_queue():
         for item in temp_queue:
             triage_queue.put(item)
         
-        return jsonify({items})
+        return jsonify(items)
         
     except Exception as e:
         return jsonify({"error": str(e)}),500
     
 @app.route("/threads")
-def thread_info():
-    return jsonify({
-        "active_threads": threading.active_count(),
-        "threads": [t.name for t in threading.enumerate()]
-    })
+def get_threads():
+    return jsonify(threads_info or {"error": "No thread info received yet."})
 
 @app.route("/events")
 def get_events():
