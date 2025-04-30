@@ -8,8 +8,8 @@ PORT = 5000
 urgency_levels = ["RED", "YELLOW", "GREEN"]
 
 def send_patient(pid):
-    urgercy = random.choice(urgency_levels)
-    patient_data = f"PatientID:{pid} urgercy: {urgercy}"
+    urgency = random.choice(urgency_levels)
+    patient_data = f"PatientID:{pid} urgency:{urgency}"
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
