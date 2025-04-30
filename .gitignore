@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+log.txt
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Virtual environments
+venv/
+.env/
+
+# IDE settings
+.vscode/
+.idea/
+
+# Pytest cache
+.pytest_cache/
+
+# For self-use
+CONVENTIONAL_COMMITS.md
