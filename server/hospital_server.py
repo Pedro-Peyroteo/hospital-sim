@@ -2,46 +2,86 @@ import socket
 import threading
 import json
 import time
+import re
 from .patient import Patient
-from .dashboard_handler import start_dashboard_listener, broadcast_to_dashboards, broadcast_thread_info
+from .dashboard_handler import broadcast_to_dashboards
 from .triage import add_to_queue
 from .doctor import doctor_worker
-from .state import triage_queue
-
-# TODO: REFRACTOR ADD_TO_QUEUE
 
 HOST = '0.0.0.0'
 PORT = 5000
 MAX_DOCTORS = 5
-        
+
+def parse_patient_message(message: str) -> dict:
+    '''
+        This regex safely extracts key:value pairs from the patient message.
+        It handles values with spaces (like names and addresses).
+
+        Example: "Name:John Doe Address:123 Elm Street"
+        -> {'Name': 'John Doe', 'Address': '123 Elm Street'}
+
+        Breakdown:
+        - (\w+)         -> captures the key (word characters before ':')
+        - :             -> matches the colon separator
+        - ([^:]+?)      -> captures the value (non-greedy, until the next key or end)
+        - (?=\s+\w+:|$) -> lookahead for next key or end of string (doesn't consume characters, just checks where to stop matching the value)
+    '''
+    pattern = r'(\w+):([^:]+?)(?=\s+\w+:|$)'
+    return dict(re.findall(pattern, message))
+    
 def handle_patient(conn, addr):
     try:
-       # Gets data from connection.
+        # Gets data from connection.
         data = conn.recv(1024).decode('utf-8')
         
         # Checks if connection as data. 
         if data:
-            print(f"[Hospital] Received from {addr}: {data}")
+            print(f"[Hospital] Received from {addr}: {data}") 
             
-            # Parse patient info.
-            parts = data.strip().split()
-            pid = parts[0].split(":")[1]
-            urgency = parts[1].split(":")[1]
+            parts = parse_patient_message(data)
             
-            patient = Patient(pid, urgency)
-            triage_queue.put(patient)
+            patient = Patient(
+                pid=parts["PatientID"],
+                name=parts.get("Name"),
+                age=int(parts.get("Age", 0)),
+                gender=parts.get("Gender"),
+                address=parts.get("Address"),
+                blood_type=parts.get("BloodType"),
+                insurance=parts.get("insurance"),
+                language=parts.get("Language"),
+                symptoms=parts.get("Symptoms", "").split(","),
+                urgency=None  # Triage will assign this field.
+            )
             
-            conn.sendall("ACK from Hospital".encode('utf-8'))
-            broadcast_to_dashboards(json.dumps({
-                "type": "patient_queued",
-                "timestamp": time.time(),
-                "payload": {
-                    "patient_id": pid,
-                    "urgency": urgency
+            accepted = add_to_queue(patient)
+            
+            if accepted:
+                ack = {
+                    "status": "ACCEPTED",
+                    "patient_id": patient.pid,
+                    "urgency": patient.urgency
                 }
-            }))
-                        
+                
+                broadcast_to_dashboards(json.dumps({
+                    "type": "patient_queued",
+                    "timestamp": time.time(),
+                    "payload": {
+                        "patient_id": patient.pid,
+                        "urgency": patient.urgency,
+                        "name": patient.name,
+                        "age": patient.age,
+                        "symptoms": patient.symptoms
+                    }
+                }))
+            else:
+                ack = {
+                    "status": "REJECTED",
+                    "patient_id": patient.pid,
+                    "reason": "Hospital triage queue full"
+                }
             
+            conn.sendall((json.dumps(ack) + "\n").encode('utf-8'))
+                    
     except Exception as e:
         print(f"[ERROR] {addr}: {e}")
     finally:
