@@ -1,6 +1,7 @@
 import socket
 import random
 import time
+import json
 
 from patient_factory import generate_patient
 
@@ -32,20 +33,21 @@ def send_patient(pid):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         s.sendall(message.encode('utf-8'))
-        ack = s.recv(1024).decode('utf-8') # TODO: REPLACE FOR BELLOW CODE.
         
-        '''
-        ack = s.recv(1024).decode('utf-8')
-
-            if ack.startswith("ACK:ACCEPTED"):
-                print(f"[Client] Patient accepted: {ack}")
-            elif ack.startswith("ACK:REJECTED"):
-                print(f"[Client] Patient rejected: {ack}")
+        ack = s.recv(1024).decode('utf-8').strip()
+        
+        try:
+            ack_data = json.loads(ack)
+            status = ack_data.get("status")
+            
+            if status == "ACCEPTED":
+                print(f"[ACK-Client] Accepted: ID={ack_data['patient_id']} Urgency={ack_data['urgency']}")
+            elif status == "REJECTED":
+                print(f"[ACK-Client] Rejected: ID={ack_data['patient_id']} Reason={ack_data['reason']}")
             else:
-                print(f"[Client] Unknown response: {ack}")
-        '''
-        
-        print(f"[Client] Server acknowledgment: {ack}")
+                print(f"[ACK-Client] Unknown response: {ack}")
+        except Exception as e:
+            print(f"[ERROR-Client] Failed to parse ACK: {ack} ({e})")
 
 # Keeps generating and sending patients to the hospital within a set delta time.
 def client_generator():

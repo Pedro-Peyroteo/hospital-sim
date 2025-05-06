@@ -7,7 +7,6 @@ from .patient import Patient
 from .dashboard_handler import broadcast_to_dashboards
 from .triage import add_to_queue
 from .doctor import doctor_worker
-from .state import triage_queue
 
 HOST = '0.0.0.0'
 PORT = 5000
@@ -54,20 +53,34 @@ def handle_patient(conn, addr):
                 urgency=None  # Triage will assign this field.
             )
             
-            add_to_queue(patient)
+            accepted = add_to_queue(patient)
             
-            conn.sendall("ACK from Hospital".encode('utf-8'))
-            broadcast_to_dashboards(json.dumps({
-                "type": "patient_queued",
-                "timestamp": time.time(),
-                "payload": {
+            if accepted:
+                ack = {
+                    "status": "ACCEPTED",
                     "patient_id": patient.pid,
-                    "urgency": patient.urgency,
-                    "name": patient.name,
-                    "age": patient.age,
-                    "symptoms": patient.symptoms
+                    "urgency": patient.urgency
                 }
-            }))
+                
+                broadcast_to_dashboards(json.dumps({
+                    "type": "patient_queued",
+                    "timestamp": time.time(),
+                    "payload": {
+                        "patient_id": patient.pid,
+                        "urgency": patient.urgency,
+                        "name": patient.name,
+                        "age": patient.age,
+                        "symptoms": patient.symptoms
+                    }
+                }))
+            else:
+                ack = {
+                    "status": "REJECTED",
+                    "patient_id": patient.pid,
+                    "reason": "Hospital triage queue full"
+                }
+            
+            conn.sendall((json.dumps(ack) + "\n").encode('utf-8'))
                     
     except Exception as e:
         print(f"[ERROR] {addr}: {e}")

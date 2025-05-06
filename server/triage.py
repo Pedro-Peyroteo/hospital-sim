@@ -1,6 +1,6 @@
-from .symptom_severity import RED_SYMPTOMS, YELLOW_SYMPTOMS, GREEN_SYMPTOMS
+from .symptom_severity import RED_SYMPTOMS, YELLOW_SYMPTOMS
 from .patient import Patient
-from .state import triage_queue
+from .state import triage_queue, MAX_QUEUE_SIZE
 
 def evaluate_patient(patient: Patient):
     # Creates a patient set() to be iterated and compared.
@@ -19,5 +19,12 @@ def evaluate_patient(patient: Patient):
     
 def add_to_queue(patient: Patient):
     evaluate_patient(patient) 
+    
+    if triage_queue.qsize() >= MAX_QUEUE_SIZE:
+        print(f"[Triage] Queue full. Patient {patient.pid} rejected.")
+        return False
+    
     triage_queue.put(patient) # Adds evaluated patient to the triage queue
     print(f"[Triage] Patient {patient.pid} {patient.name} ({patient.urgency}) added to queue.")
+    
+    return True
