@@ -1,13 +1,16 @@
 import json
 import time
 import random
-from .state import triage_queue
+from .state import triage_queue, waiting_patients
 from .dashboard_handler import broadcast_to_dashboards
 
 def doctor_worker(doctor_id):
     while True:
         if not triage_queue.empty():
             patient = triage_queue.get()
+            
+            # Remove patient from waiting list.
+            waiting_patients.pop(patient.pid, None)
             
             print(f"[DOCTOR {doctor_id}] Treating patient {patient.pid} ({patient.urgency})...")
             broadcast_to_dashboards(json.dumps({
