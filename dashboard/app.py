@@ -7,25 +7,31 @@ app = Flask(__name__)
 @app.route("/queue")
 def get_queue():
     try:
-        items = []
-        temp_queue = []
-        
-        while not triage_queue.empty():
-            item = triage_queue.get()
-            temp_queue.append(item)
-            items.append({"pid": item.pid, "urgency": item.urgency})
-            
-        for item in temp_queue:
-            triage_queue.put(item)
-        
+        items = [
+            {
+                "pid": patient.pid,
+                "name": patient.name,
+                "age": patient.age,
+                "urgency": patient.urgency,
+                "symptoms": patient.symptoms
+            }
+            for patient in list(triage_queue.queue)
+        ]
+
         return jsonify(items)
         
     except Exception as e:
-        return jsonify({"error": str(e)}),500
+        return jsonify({"error": str(e)}), 500
     
 @app.route("/threads")
 def get_threads():
-    return jsonify(threads_info or {"error": "No thread info received yet."})
+    if threads_info:
+        return jsonify({
+            "active_count": threads_info.get("active", 0),
+            "timestamp": threads_info.get("timestamp"),
+            "thread_names": threads_info.get("threads", [])
+        })
+    return jsonify({"error": "No thread info received yet."})
 
 @app.route("/events")
 def get_events():
